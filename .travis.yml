@@ -107,6 +107,12 @@ before_install:
     travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
     travis_retry wget https://github.com/google/protobuf/releases/download/v3.3.0/protoc-3.3.0-linux-x86_64.zip
     unzip -j protoc-*-linux-x86_64.zip bin/protoc -d ~/.local/bin
+    #
+    travis_retry wget https://github.com/google/kythe/releases/download/v0.0.26/kythe-v0.0.26.tar.gz
+    tar xzf kythe-v0.0.26.tar.gz -C /opt/
+    rm -r /opt/kythe
+    ln -s /opt/kythe-v0.0.26 /opt/kythe
+    chmod -R 755 /opt/kythe/web/ui
   fi
 
   # Use the more reliable S3 mirror of Hackage
@@ -134,6 +140,8 @@ install:
 
       # Get the list of packages from the stack.yaml file
       # See https://github.com/commercialhaskell/stack/issues/3238
+      echo "Query output below"  # For debugging
+      stack --install-ghc query locals
       PACKAGES=$(stack --install-ghc query locals | grep '^ *path' | sed 's@^ *path:@@')
 
       cabal install --only-dependencies --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
