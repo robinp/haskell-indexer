@@ -16,7 +16,7 @@
 
 # TODO(robinp): take these from outer env if present.
 GHC_KYTHE=ghc_kythe_wrapper
-VERIFIER=/opt/kythe/tools/verifier
+VERIFIER=$KYTHE_RELEASE/tools/verifier
 
 BASIC="testdata/basic"
 

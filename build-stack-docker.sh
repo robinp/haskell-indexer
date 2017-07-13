@@ -64,19 +64,19 @@ serve() {
   for e in $(ls $OUT/*entries)
   do
     echo " * $e"
-    cat $e | /opt/kythe/tools/write_entries --graphstore $OUT/gs
+    cat $e | $KYTHE_RELEASE/tools/write_entries --graphstore $OUT/gs
   done
   echo "== Converting to serving tables."
-  /opt/kythe/tools/write_tables \
+  $KYTHE_RELEASE/tools/write_tables \
       --graphstore $OUT/gs \
       --out $OUT/tbl \
       --compress_shards
   echo "== Starting HTTP server."
   echo " * Click the ::/ in it's top-left!"
-  /opt/kythe/tools/http_server \
+  $KYTHE_RELEASE/tools/http_server \
       --serving_table $OUT/tbl \
       --listen 0.0.0.0:8080 \
-      --public_resources /opt/kythe/web/ui
+      --public_resources $KYTHE_RELEASE/web/ui
   popd
 }
 

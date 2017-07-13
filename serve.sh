@@ -16,16 +16,16 @@ rm -fr "$INDEXER_OUTPUT_DIR"/{gs,tbl}
 for e in "$INDEXER_OUTPUT_DIR"/*.entries
 do
   echo " * ${e}"
-  /opt/kythe/tools/write_entries --graphstore "$INDEXER_OUTPUT_DIR/gs" < "$e"
+  $KYTHE_RELEASE/tools/write_entries --graphstore "$INDEXER_OUTPUT_DIR/gs" < "$e"
 done
 echo "== Converting to serving tables."
-/opt/kythe/tools/write_tables \
+$KYTHE_RELEASE/tools/write_tables \
     --graphstore "$INDEXER_OUTPUT_DIR/gs" \
     --out "$INDEXER_OUTPUT_DIR/tbl" \
     --compress_shards
 echo "== Starting HTTP server."
 echo " * Click the ::/ in the top-left!"
-/opt/kythe/tools/http_server \
+$KYTHE_RELEASE/tools/http_server \
     --serving_table "$INDEXER_OUTPUT_DIR/tbl" \
     --listen "$2" \
-    --public_resources /opt/kythe/web/ui
+    --public_resources $KYTHE_RELEASE/web/ui

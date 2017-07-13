@@ -24,13 +24,16 @@ Download Stack from http://docs.haskellstack.org
 ## Kythe
 
 If you want to use the Kythe frontend, download a [Kythe
-release](https://github.com/google/kythe/releases) and unpack it.
+release](https://github.com/google/kythe/releases) and unpack it. Set the
+`KYTHE_RELEASE` environment variable to point to the Kythe directory, for
+example to `/opt/kythe`:
 
 ```
 tar xzf kythe-v0.0.26.tar.gz -C /opt/
 rm -r /opt/kythe
 ln -s /opt/kythe-v0.0.26 /opt/kythe
 chmod -R 755 /opt/kythe/web/ui  # It misses permission by default.
+export KYTHE_RELEASE=/opt/kythe
 ```
 
 Version `v0.0.26` is verified to work with Haskell indexer.
@@ -65,7 +68,7 @@ pushd kythe-verification; stack install && ./test.sh; popd
 
 # Demo
 
-To index a few packages, run:
+To index a few packages after completing above steps, run:
 
 ```bash
 ./build-stack.sh /tmp/logs mtlparse cpu
