@@ -31,8 +31,9 @@ project_root=$(cd "$(dirname "$0")"; pwd)
 # Note: `ghc-pkg unregister` does not unregister dependencies, so dependencies
 # won't be reindexed unless explicitly specified in the command line.
 for i in "${@:1}"; do
+  echo "=== $i"
   stack exec -- ghc-pkg latest "$i" &> /dev/null && stack exec \
-    -- ghc-pkg unregister --force "$i" || :
+    -- ghc-pkg unregister --force "$i" || echo eek
 done
 
 # Put stack wrapper ghc script, ghc-pkg (from compiler-bin) and
@@ -40,4 +41,4 @@ done
 # $(stack path --compiler-bin) is also on the PATH to make --system-ghc pick it instead
 # of system ghc (e.g. /usr/bin/ghc).
 PATH="$project_root/wrappers/stack:$(stack path --compiler-bin):$PATH:$(stack path --local-install-root)/bin" \
-  stack --system-ghc build "${@:1}"
+  stack -j1 --system-ghc build "${@:1}"
