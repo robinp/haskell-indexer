@@ -17,6 +17,9 @@ ADDRESS="$1"
 # ===============
 # Delete old Kythe GraphStore and Kythe serving tables.
 rm -fr "$INDEXER_OUTPUT_DIR"/{gs,tbl}
+# If a base GraphStore is present, merge the indexed entries into that.
+# Useful for semi-incremental indexing.
+[ -d "$INDEXER_OUTPUT_DIR/basegs" ] && cp -r "$INDEXER_OUTPUT_DIR"/basegs "$INDEXER_OUTPUT_DIR"/gs
 
 
 # It's probably more efficient to cat them together, but this way we see

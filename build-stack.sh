@@ -8,6 +8,9 @@ if (($# < 1)); then
   echo "Env variables with their defaults:" >&2
   echo "  - INDEXER_OUTPUT_DIR=/tmp/indexer-output" >&2
   echo "    Where to put indexing logs and output entries." >&2
+  echo >&2
+  echo "  - GHC_WRAPPER_PATH=$project_root/wrappers/stack" >&2
+  echo "    Where to find the fake ghc wrapper script." >&2
   exit 1
 fi
 
@@ -21,8 +24,9 @@ export INDEXER_OUTPUT_DIR=$(readlink -f "${INDEXER_OUTPUT_DIR:-/tmp/indexer-outp
 # altering the PATH.
 export REALGHC=$(stack path --compiler-exe)
 
-project_root=$(cd "$(dirname "$0")"; pwd)
+project_root=$(readlink -f "$(dirname "$0")")
 
+export GHC_WRAPPER_PATH=$(readlink -f "${GHC_WRAPPER_PATH:-$project_root/wrappers/stack}")
 # Build and index the packages
 # ============================
 # `stack build` does not rebuild packages if they have been registered in the
@@ -33,12 +37,12 @@ project_root=$(cd "$(dirname "$0")"; pwd)
 for i in "${@:1}"; do
   echo "=== $i"
   stack exec -- ghc-pkg latest "$i" &> /dev/null && stack exec \
-    -- ghc-pkg unregister --force "$i" || echo eek
+    -- ghc-pkg unregister --force "$i" || echo "Note: Couldn't unregister package $i"
 done
 
 # Put stack wrapper ghc script, ghc-pkg (from compiler-bin) and
 # ghc_kythe_wrapper (from local-install-root, invoked by wrappers/stack/ghc) on the PATH.
 # $(stack path --compiler-bin) is also on the PATH to make --system-ghc pick it instead
 # of system ghc (e.g. /usr/bin/ghc).
-PATH="$project_root/wrappers/stack:$(stack path --compiler-bin):$PATH:$(stack path --local-install-root)/bin" \
-  stack -j1 --system-ghc build "${@:1}"
+PATH="$GHC_WRAPPER_PATH:$(stack path --compiler-bin):$PATH:$(stack path --local-install-root)/bin" \
+  stack --system-ghc build "${@:1}"
