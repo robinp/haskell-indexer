@@ -3,6 +3,8 @@
 # Script for building Kythe index of Haskell packages.
 # See usage below.
 
+project_root=$(readlink -f "$(dirname "$0")")
+
 if (($# < 1)); then
   echo "Usage: $0 package1 package2 ..." >&2
   echo "Env variables with their defaults:" >&2
@@ -23,8 +25,6 @@ export INDEXER_OUTPUT_DIR=$(readlink -f "${INDEXER_OUTPUT_DIR:-/tmp/indexer-outp
 # REALGHC is used by stack wrapper ghc. Note that it must be set before
 # altering the PATH.
 export REALGHC=$(stack path --compiler-exe)
-
-project_root=$(readlink -f "$(dirname "$0")")
 
 export GHC_WRAPPER_PATH=$(readlink -f "${GHC_WRAPPER_PATH:-$project_root/wrappers/stack}")
 # Build and index the packages
