@@ -71,7 +71,7 @@ toKythe basevn content XRef{..} = do
         pkgFileEntry = edge filevn ChildOfE pkgvn
     sourceList (pkgFileEntry : pkgEntries ++ fileEntries)
     flip runReaderT env $ do
-        stream (makeAnchor (mtSpan xrefModule) DefinesBindingE pkgvn
+        stream (makeAnchor (mtSpan xrefModule) [DefinesBindingE] pkgvn
                            Nothing Nothing)
         mapM_ (stream . makeDeclFacts) xrefDecls
         mapM_ (stream . makeDocDeclFacts) xrefDocDecls
@@ -127,12 +127,12 @@ makeUsageFacts TickReference{..} = do
     --   anchor) and ref/call (with anchor spanning also the args).
     targetVname <- tickVName refTargetTick
     mbCallContext <- traverse tickVName refHighLevelContext
-    let edgeType = case refKind of
-            Ref -> RefE
-            Call -> RefE
-            TypeDecl -> RefDocE
-            Import -> RefImportsE
-    makeAnchor (Just refSourceSpan) edgeType targetVname Nothing mbCallContext
+    let edgeTypes = case refKind of
+            Ref -> [RefE]
+            Call -> [RefE, RefCallE]  -- For now with same span, see above.
+            TypeDecl -> [RefDocE]
+            Import -> [RefImportsE]
+    makeAnchor (Just refSourceSpan) edgeTypes targetVname Nothing mbCallContext
 
 -- | Makes all entries for a declaration.
 makeDeclFacts :: Decl -> Conversion [Raw.Entry]
@@ -144,7 +144,7 @@ makeDeclFacts decl@Decl{..} = do
     let declFacts = nodeFacts declVName VariableNK
                         [nodeFact CompleteF Definition]
     anchorEntries <- makeAnchor (declPreferredUiSpan decl)
-                         DefinesBindingE declVName
+                         [DefinesBindingE] declVName
                          Nothing  -- snippet
                          -- TODO(robinpalotai): plumb high-level context to
                          -- Decl entries too in backend.
@@ -181,12 +181,12 @@ makeModuleDocDeclFacts ModuleDocUriDecl{..} = do
 -- If snippet span is not provided, the Kythe service will auto-construct one.
 makeAnchor
     :: Maybe Span       -- ^ Anchor span. If missing, anchor is implicit.
-    -> AnchorEdge       -- ^ How it refers its target.
+    -> [AnchorEdge]     -- ^ How it refers its target.
     -> Raw.VName        -- ^ Anchor target.
     -> Maybe Span       -- ^ Snippet span.
     -> Maybe Raw.VName  -- ^ Reference context (like enclosing function).
     -> Conversion [Raw.Entry]
-makeAnchor mbSource anchorEdge targetVName mbSnippet mbRefContext = do
+makeAnchor mbSource anchorEdges targetVName mbSnippet mbRefContext = do
     (vname, spanOrSubkindFacts) <- fromMaybeTPureDef implicits $ do
         -- TODO(robinpalotai): CPP - spanAndOffs can be Nothing, if a macro
         --   was expanded, since GHC expands the macro on the same, "long" line
@@ -207,8 +207,8 @@ makeAnchor mbSource anchorEdge targetVName mbSnippet mbRefContext = do
             , snippetFacts
             ]
     let edgeEntries =
-            edge vname (AnchorEdgeE anchorEdge) targetVName
-                : maybeToList (edge vname ChildOfE <$> mbRefContext)
+            map (\ae -> edge vname (AnchorEdgeE ae) targetVName) anchorEdges
+              ++ maybeToList (edge vname ChildOfE <$> mbRefContext)
     return $! nodeEntries ++ edgeEntries
   where
     implicits = ( implicitAnchorVName targetVName
@@ -234,7 +234,7 @@ makeImportFacts :: ModuleTick -> Conversion [Raw.Entry]
 makeImportFacts ModuleTick{..} = do
     vn <- asks baseVName
     let NameAndEntries pkgvn _ = makePackageFacts vn mtPkgModule
-    makeAnchor mtSpan RefImportsE pkgvn Nothing Nothing
+    makeAnchor mtSpan [RefImportsE] pkgvn Nothing Nothing
 
 -- Helpers below.
 
