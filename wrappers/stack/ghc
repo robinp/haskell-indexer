@@ -6,7 +6,7 @@ set -e
 # Note that variables INDEXER_OUTPUT_DIR and REALGHC are set outside this script.
 
 log() {
-    echo "$1" >> "$INDEXER_OUTPUT_DIR/$PKG.log"
+    echo "$UNIQ $1" >> "$INDEXER_OUTPUT_DIR/$PKG.log"
 }
 
 log "========= FAKE GHC ======="
