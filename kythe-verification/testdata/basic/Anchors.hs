@@ -5,6 +5,7 @@ module Anchors where
 f =
     -- Kythe usually assign source anchors of ref/calls to their parent context.
     -- - @callMeMaybe childof FunF
+    -- - @callMeMaybe ref/call CallF
     callMeMaybe undefined
 
 -- - @g defines/binding FunG
@@ -16,4 +17,5 @@ g = x
   where x = callMeMaybe undefined
 
 callMeMaybe :: Int -> Int
+-- - @callMeMaybe defines/binding CallF
 callMeMaybe = undefined

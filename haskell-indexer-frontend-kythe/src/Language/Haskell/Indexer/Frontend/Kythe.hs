@@ -123,13 +123,13 @@ makeFileFacts basevn origPath encodedContent =
 makeUsageFacts :: TickReference -> Conversion [Raw.Entry]
 makeUsageFacts TickReference{..} = do
     -- TODO(robinpalotai): add more data from backend to translate layer about
-    --   spans of ref vs call. In Kythe a call needs both a ref (with name
-    --   anchor) and ref/call (with anchor spanning also the args).
+    --   spans of ref vs call.
     targetVname <- tickVName refTargetTick
     mbCallContext <- traverse tickVName refHighLevelContext
     let edgeTypes = case refKind of
             Ref -> [RefE]
-            Call -> [RefE, RefCallE]  -- For now with same span, see above.
+            Call -> [RefCallE]  -- TODO(robinp): call span might need to include
+                                --   arguments. What is the benefit?
             TypeDecl -> [RefDocE]
             Import -> [RefImportsE]
     makeAnchor (Just refSourceSpan) edgeTypes targetVname Nothing mbCallContext
