@@ -10,6 +10,7 @@ f a =
 -- - @a defines/binding ParamGA
 -- - @b defines/binding ParamGB
 g (a,b) =
-    -- - @a ref ParamGA
+    -- TODO(robinp): odd behavior with first ref being ref/call.
+    -- - @a ref/call ParamGA
     -- - @b ref ParamGB
     a + b

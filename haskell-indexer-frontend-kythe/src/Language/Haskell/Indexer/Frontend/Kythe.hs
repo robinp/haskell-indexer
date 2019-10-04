@@ -130,9 +130,19 @@ makeUsageFacts TickReference{..} = do
             Ref -> [RefE]
             Call -> [RefCallE]  -- TODO(robinp): call span might need to include
                                 --   arguments. What is the benefit?
-            TypeDecl -> [RefDocE]
             Import -> [RefImportsE]
-    makeAnchor (Just refSourceSpan) edgeTypes targetVname Nothing mbCallContext
+            TypeDecl -> [CompletesE]  -- TODO(robinp): in flux
+    declEntries <- if refKind == TypeDecl
+        then do
+          declVname <- tickVName refTargetTick { tickThing = tickThing refTargetTick <> ":decl" }
+          -- TODO(robinp): factor with makeDeclFacts
+          let declFacts = nodeFacts declVname VariableNK
+                            [ nodeFact CompleteF Complete ]
+          es <- makeAnchor (Just refSourceSpan) [DefinesBindingE] declVname Nothing Nothing
+          pure (es ++ declFacts)
+        else pure []
+    anchorEntries <- makeAnchor (Just refSourceSpan) edgeTypes targetVname Nothing mbCallContext
+    pure (anchorEntries ++ declEntries)
 
 -- | Makes all entries for a declaration.
 makeDeclFacts :: Decl -> Conversion [Raw.Entry]
@@ -146,8 +156,9 @@ makeDeclFacts decl@Decl{..} = do
     anchorEntries <- makeAnchor (declPreferredUiSpan decl)
                          [DefinesBindingE] declVName
                          Nothing  -- snippet
-                         -- TODO(robinpalotai): plumb high-level context to
-                         -- Decl entries too in backend.
+                         -- Note: plumbing high-level context to Decl entries
+                         -- is not really needed, as they won't participate
+                         -- in callgraphs anyway. So we don't.
                          Nothing
     childOfModule <- if tickUniqueInModule declTick
         then Just . edge declVName ChildOfE <$> asks pkgVName

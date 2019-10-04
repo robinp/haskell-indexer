@@ -6,5 +6,5 @@ import CrossRef1 (foo)
 import Data.List (groupBy, sortBy)
 
 bar :: Int
--- - @foo ref Fun
+-- - @foo ref/call Fun
 bar = foo + 1

@@ -171,11 +171,12 @@ data Edge
 
 -- | Edges running from anchor to semantic node.
 data AnchorEdge
-    = DefinesE
+    = CompletesE
+    | DefinesE
     | DefinesBindingE
     | RefE
     | RefCallE
-    | RefDocE    
+    | RefDocE
     | RefImportsE
 
 printEdge :: Edge -> Text
@@ -185,6 +186,7 @@ printEdge = \case
     OverridesRootE  -> "/kythe/edge/overrides/root"
     ExtendsE        -> "/kythe/edge/extends"
     AnchorEdgeE e   -> case e of
+        CompletesE      -> "/kythe/edge/completes"
         DefinesE        -> "/kythe/edge/defines"
         DefinesBindingE -> "/kythe/edge/defines/binding"
         RefE            -> "/kythe/edge/ref"
