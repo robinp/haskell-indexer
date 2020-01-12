@@ -27,7 +27,7 @@ instance Foo Int where
     -- - @show childof FunIntFoo
     foo = show
 
--- - @foo ref FunFoo
+-- - @foo ref/call FunFoo
 f x = foo x
 
 g :: Int -> String

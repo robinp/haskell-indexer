@@ -132,17 +132,19 @@ makeUsageFacts TickReference{..} = do
                                 --   arguments. What is the benefit?
             Import -> [RefImportsE]
             TypeDecl -> [CompletesE]  -- TODO(robinp): in flux
-    declEntries <- if refKind == TypeDecl
+    if refKind == TypeDecl
         then do
-          declVname <- tickVName refTargetTick { tickThing = tickThing refTargetTick <> ":decl" }
+          declVname <- tickVName (synthesizeSigDeclTick refTargetTick)
           -- TODO(robinp): factor with makeDeclFacts
-          let declFacts = nodeFacts declVname VariableNK
-                            [ nodeFact CompleteF Complete ]
+          let declFacts = nodeFacts declVname FunctionNK
+                            [ nodeFact CompleteF Incomplete ]
           es <- makeAnchor (Just refSourceSpan) [DefinesBindingE] declVname Nothing Nothing
           pure (es ++ declFacts)
-        else pure []
-    anchorEntries <- makeAnchor (Just refSourceSpan) edgeTypes targetVname Nothing mbCallContext
-    pure (anchorEntries ++ declEntries)
+        else
+          makeAnchor (Just refSourceSpan) edgeTypes targetVname Nothing mbCallContext
+
+synthesizeSigDeclTick :: Tick -> Tick
+synthesizeSigDeclTick tick = tick { tickThing = tickThing tick <> ":decl" }
 
 -- | Makes all entries for a declaration.
 makeDeclFacts :: Decl -> Conversion [Raw.Entry]
@@ -150,20 +152,29 @@ makeDeclFacts decl@Decl{..} = do
     declVName <- tickVName declTick
     -- TODO(robinpalotai): use actual node type (Variable is a catch-all now).
     -- TODO(robinpalotai): emit type entries.
-    -- TODO(robinpalotai): emit Module childofness if top-level.
-    let declFacts = nodeFacts declVName VariableNK
-                        [nodeFact CompleteF Definition]
-    anchorEntries <- makeAnchor (declPreferredUiSpan decl)
+    let declFacts = nodeFacts declVName FunctionNK
+                        [ nodeFact CompleteF Definition ]
+        anchorSpan = declPreferredUiSpan decl
+    (anchorVName, anchorEntries) <- makeAnchor' anchorSpan
                          [DefinesBindingE] declVName
                          Nothing  -- snippet
                          -- Note: plumbing high-level context to Decl entries
                          -- is not really needed, as they won't participate
                          -- in callgraphs anyway. So we don't.
                          Nothing
+    -- NOTE: if a declaration was not present, will emit dangling edge. But
+    -- we can live with that, table construction will discard it.
+    sigDeclVName <- tickVName (synthesizeSigDeclTick declTick)
+    let completesSig = edge anchorVName (AnchorEdgeE CompletesE) sigDeclVName
     childOfModule <- if tickUniqueInModule declTick
         then Just . edge declVName ChildOfE <$> asks pkgVName
         else return Nothing
-    return (declFacts ++ anchorEntries ++ maybeToList childOfModule)
+    return $ concat
+        [ declFacts
+        , anchorEntries
+        , pure completesSig
+        , maybeToList childOfModule
+        ]
 
 -- | Makes all entries for a doc/uri declaration.
 makeDocDeclFacts :: DocUriDecl -> Conversion [Raw.Entry]
@@ -190,14 +201,14 @@ makeModuleDocDeclFacts ModuleDocUriDecl{..} = do
 -- | Makes entries for an anchor (either explicit or implicit)..
 --
 -- If snippet span is not provided, the Kythe service will auto-construct one.
-makeAnchor
+makeAnchor'
     :: Maybe Span       -- ^ Anchor span. If missing, anchor is implicit.
     -> [AnchorEdge]     -- ^ How it refers its target.
     -> Raw.VName        -- ^ Anchor target.
     -> Maybe Span       -- ^ Snippet span.
     -> Maybe Raw.VName  -- ^ Reference context (like enclosing function).
-    -> Conversion [Raw.Entry]
-makeAnchor mbSource anchorEdges targetVName mbSnippet mbRefContext = do
+    -> Conversion (VName, [Raw.Entry])
+makeAnchor' mbSource anchorEdges targetVName mbSnippet mbRefContext = do
     (vname, spanOrSubkindFacts) <- fromMaybeTPureDef implicits $ do
         -- TODO(robinpalotai): CPP - spanAndOffs can be Nothing, if a macro
         --   was expanded, since GHC expands the macro on the same, "long" line
@@ -220,10 +231,19 @@ makeAnchor mbSource anchorEdges targetVName mbSnippet mbRefContext = do
     let edgeEntries =
             map (\ae -> edge vname (AnchorEdgeE ae) targetVName) anchorEdges
               ++ maybeToList (edge vname ChildOfE <$> mbRefContext)
-    return $! nodeEntries ++ edgeEntries
+    return $! (vname, nodeEntries ++ edgeEntries)
   where
     implicits = ( implicitAnchorVName targetVName
                 , [nodeFact AnchorSubkindF ImplicitAnchor] )
+
+makeAnchor
+    :: Maybe Span
+    -> [AnchorEdge]
+    -> Raw.VName
+    -> Maybe Span
+    -> Maybe Raw.VName
+    -> Conversion [Raw.Entry]
+makeAnchor a b c d e = snd <$> makeAnchor' a b c d e
 
 -- | Makes fact about a non-reference edge.
 makeRelationFacts :: Relation -> Conversion [Raw.Entry]

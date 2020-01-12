@@ -16,7 +16,7 @@ data Rec = Rec { foo :: Int, bar :: Int }
 -- DataRef.hs for more comments).
 unpack (Rec f b) = f
 
--- - @foo ref FieldFoo
+-- - @foo ref/call FieldFoo
 access r = foo r
 
 -- TODO(robinpalotai): revamp record references, and omit field refs originating

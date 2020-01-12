@@ -5,7 +5,7 @@ module RecursiveRef where
 -- binding. This verifies that we handle the case.
 -- - @recNoSig defines/binding FunRNS
 recNoSig x =
-    -- - @recNoSig ref FunRNS
+    -- - @recNoSig ref/call FunRNS
     recNoSig x
 
 -- - @localRecNoSig ref FunLRNS
@@ -13,7 +13,7 @@ dummy = localRecNoSig
   where
     -- - @localRecNoSig defines/binding FunLRNS
     localRecNoSig x =
-        -- - @localRecNoSig ref FunLRNS
+        -- - @localRecNoSig ref/call FunLRNS
         localRecNoSig x
 
 -- Recursive call to function with type signature targets the polymorphic
@@ -21,7 +21,7 @@ dummy = localRecNoSig
 recWithSig :: Int -> Int
 -- - @recWithSig defines/binding FunRWS
 recWithSig x =
-    -- - @recWithSig ref FunRWS
+    -- - @recWithSig ref/call FunRWS
     recWithSig x
 
 -- - @mutualNoSigA defines/binding FunMA
